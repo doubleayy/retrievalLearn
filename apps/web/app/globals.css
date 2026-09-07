@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #080a0f;
+  color: #e6eaf0;
+}
+
+body {
+  background-image:
+    radial-gradient(60rem 30rem at 15% -10%, rgba(167, 139, 250, 0.09), transparent 60%),
+    radial-gradient(50rem 26rem at 90% 0%, rgba(34, 184, 207, 0.07), transparent 60%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgba(167, 139, 250, 0.35);
+}
+
+/* Scrollbars inside code panes */
+.scroll-slim::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  background: #2e3646;
+  border-radius: 8px;
+}
+.scroll-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Minimal syntax colouring for the query panes */
+.tok-kw { color: #c4b5fd; font-weight: 600; }
+.tok-str { color: #86efac; }
+.tok-num { color: #fbbf24; }
+.tok-com { color: #6b7789; font-style: italic; }
+.tok-fn { color: #67e8f9; }
+.tok-rel { color: #f472b6; }

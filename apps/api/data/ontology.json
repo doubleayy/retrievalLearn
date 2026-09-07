@@ -1,0 +1,196 @@
+{
+  "iri": "https://retrieval-arena.dev/ontology/hoops#",
+  "prefix": "hoops",
+  "version": "1.0.0",
+  "description": "A small OWL-lite domain ontology for professional basketball. It exists to demonstrate what a retrieval system can answer once it knows that 'big man' is not a string but a class, and that 'has beef with' is a relation derivable from events.",
+  "classes": [
+    {"id": "Entity", "label": "Entity", "parents": [], "synonyms": []},
+
+    {"id": "Person", "label": "Person", "parents": ["Entity"], "synonyms": ["person", "individual"]},
+    {"id": "Player", "label": "Player", "parents": ["Person"], "synonyms": ["player", "pro", "hooper", "starter", "rotation player"]},
+
+    {"id": "Guard", "label": "Guard", "parents": ["Player"], "synonyms": ["guard", "backcourt", "ball handler", "handler"]},
+    {"id": "PointGuard", "label": "Point Guard", "parents": ["Guard"], "synonyms": ["point guard", "PG", "the one", "floor general", "lead guard", "primary initiator"], "position_codes": ["PG"]},
+    {"id": "ShootingGuard", "label": "Shooting Guard", "parents": ["Guard"], "synonyms": ["shooting guard", "SG", "the two", "off guard", "two guard"], "position_codes": ["SG"]},
+
+    {"id": "Forward", "label": "Forward", "parents": ["Player"], "synonyms": ["forward", "frontcourt"]},
+    {"id": "SmallForward", "label": "Small Forward", "parents": ["Forward"], "synonyms": ["small forward", "SF", "the three", "wing forward"], "position_codes": ["SF"]},
+    {"id": "PowerForward", "label": "Power Forward", "parents": ["Forward"], "synonyms": ["power forward", "PF", "the four", "stretch four", "combo forward"], "position_codes": ["PF"]},
+
+    {"id": "Center", "label": "Center", "parents": ["Player"], "synonyms": ["center", "C", "the five", "pivot", "seven-footer", "post player", "anchor"], "position_codes": ["C"]},
+
+    {"id": "Organization", "label": "Organization", "parents": ["Entity"], "synonyms": ["organization", "franchise"]},
+    {"id": "Team", "label": "Team", "parents": ["Organization"], "synonyms": ["team", "club", "roster", "franchise"]},
+
+    {"id": "Event", "label": "Event", "parents": ["Entity"], "synonyms": ["event", "incident", "episode"]},
+
+    {"id": "Transaction", "label": "Transaction", "parents": ["Event"], "synonyms": ["transaction", "move", "deal", "roster move"]},
+    {"id": "Trade", "label": "Trade", "parents": ["Transaction"], "synonyms": ["trade", "traded", "dealt", "swap"]},
+    {"id": "SignAndTrade", "label": "Sign and Trade", "parents": ["Transaction"], "synonyms": ["sign-and-trade", "sign and trade"]},
+    {"id": "FreeAgencySigning", "label": "Free Agency Signing", "parents": ["Transaction"], "synonyms": ["free agency", "signed", "signing", "free agent"]},
+
+    {"id": "Conflict", "label": "Conflict", "parents": ["Event"], "synonyms": ["conflict", "beef", "feud", "bad blood", "rift", "friction", "tension", "dispute", "drama", "fallout", "spat", "at odds", "falling out", "clash"]},
+    {"id": "OnCourtAltercation", "label": "On-Court Altercation", "parents": ["Conflict"], "synonyms": ["altercation", "scuffle", "fight", "shoving match", "ejection", "flagrant", "headlock", "on-court incident"]},
+    {"id": "LockerRoomIncident", "label": "Locker Room Incident", "parents": ["Conflict"], "synonyms": ["locker room incident", "practice fight", "practice altercation", "behind closed doors", "split into camps", "chemistry problem"]},
+    {"id": "PublicCallout", "label": "Public Callout", "parents": ["Conflict"], "synonyms": ["called out", "criticised", "criticized", "sniping", "subtweet", "took a shot at", "aired out", "public criticism"]},
+    {"id": "ContractDispute", "label": "Contract Dispute", "parents": ["Conflict"], "synonyms": ["trade request", "asked out", "holdout", "extension standoff", "contract dispute", "wants out"]},
+    {"id": "ConductSuspension", "label": "Conduct Suspension", "parents": ["Conflict"], "synonyms": ["suspension", "suspended", "discipline", "conduct", "fined"]},
+    {"id": "RoleDispute", "label": "Role Dispute", "parents": ["Conflict"], "synonyms": ["role dispute", "usage", "touches", "shot distribution", "pecking order"]},
+    {"id": "Beef", "label": "Beef", "parents": ["Conflict"], "synonyms": ["beef", "beefing", "got beef"]},
+
+    {"id": "Document", "label": "Document", "parents": ["Entity"], "synonyms": ["document", "article", "story"]},
+    {"id": "Article", "label": "Article", "parents": ["Document"], "synonyms": ["article", "report", "piece", "write-up"]}
+  ],
+
+  "defined_classes": [
+    {
+      "id": "BigMan",
+      "label": "Big Man",
+      "parents": ["Player"],
+      "synonyms": ["big man", "big men", "bigs", "big", "frontcourt player", "post player", "the four", "the five", "seven-footer", "tall player"],
+      "equivalent_to": "PowerForward OR Center",
+      "definition_type": "union",
+      "union_of": ["PowerForward", "Center"],
+      "sql_predicate": "position IN ('PF','C')",
+      "why_it_matters": "Nobody writes 'PF' in a news article and nobody types 'position IN (PF,C)' into a search box. This class is the bridge between the two."
+    },
+    {
+      "id": "Wing",
+      "label": "Wing",
+      "parents": ["Player"],
+      "synonyms": ["wing", "wings", "perimeter player", "swingman", "two-three", "on-ball defender"],
+      "equivalent_to": "ShootingGuard OR SmallForward",
+      "definition_type": "union",
+      "union_of": ["ShootingGuard", "SmallForward"],
+      "sql_predicate": "position IN ('SG','SF')"
+    },
+    {
+      "id": "Backcourt",
+      "label": "Backcourt",
+      "parents": ["Player"],
+      "synonyms": ["backcourt", "guards", "guard duo"],
+      "equivalent_to": "PointGuard OR ShootingGuard",
+      "definition_type": "union",
+      "union_of": ["PointGuard", "ShootingGuard"],
+      "sql_predicate": "position IN ('PG','SG')"
+    },
+    {
+      "id": "Sniper",
+      "label": "Sniper",
+      "parents": ["Player"],
+      "synonyms": ["sniper", "shooter", "sharpshooter", "marksman", "spacer", "floor spacer", "knockdown shooter", "40 percent club"],
+      "equivalent_to": "Player with fg3_pct >= 0.38",
+      "definition_type": "restriction",
+      "sql_predicate": "fg3_pct >= 0.38",
+      "why_it_matters": "A quality threshold, not a category. No document in the corpus contains the word 'sniper', yet the class has eleven members."
+    },
+    {
+      "id": "RimProtector",
+      "label": "Rim Protector",
+      "parents": ["Player"],
+      "synonyms": ["rim protector", "shot blocker", "paint protector", "defensive anchor", "interior defender"],
+      "equivalent_to": "Player with bpg >= 1.5",
+      "definition_type": "restriction",
+      "sql_predicate": "bpg >= 1.5"
+    },
+    {
+      "id": "Veteran",
+      "label": "Veteran",
+      "parents": ["Player"],
+      "synonyms": ["veteran", "vet", "old head", "elder statesman", "greybeard"],
+      "equivalent_to": "Player with age >= 32",
+      "definition_type": "restriction",
+      "sql_predicate": "age >= 32"
+    },
+    {
+      "id": "YoungPlayer",
+      "label": "Young Player",
+      "parents": ["Player"],
+      "synonyms": ["young player", "youngster", "prospect", "sophomore", "kid", "up-and-comer"],
+      "equivalent_to": "Player with age <= 24",
+      "definition_type": "restriction",
+      "sql_predicate": "age <= 24"
+    },
+    {
+      "id": "MaxContractPlayer",
+      "label": "Max Contract Player",
+      "parents": ["Player"],
+      "synonyms": ["max player", "max contract", "highest paid", "supermax"],
+      "equivalent_to": "Player with salary_usd >= 35000000",
+      "definition_type": "restriction",
+      "sql_predicate": "salary_usd >= 35000000"
+    },
+    {
+      "id": "DraftSteal",
+      "label": "Draft Steal",
+      "parents": ["Player"],
+      "synonyms": ["draft steal", "second round steal", "undrafted", "late pick", "overlooked"],
+      "equivalent_to": "Player with draft_pick >= 31 or no draft pick",
+      "definition_type": "restriction",
+      "sql_predicate": "(draft_pick IS NULL OR draft_pick >= 31)"
+    },
+    {
+      "id": "HighUsageCreator",
+      "label": "High Usage Creator",
+      "parents": ["Player"],
+      "synonyms": ["primary creator", "engine", "offensive hub", "number one option", "high usage"],
+      "equivalent_to": "Player with ppg >= 25 and apg >= 5",
+      "definition_type": "restriction",
+      "sql_predicate": "ppg >= 25 AND apg >= 5"
+    }
+  ],
+
+  "object_properties": [
+    {"id": "playsFor", "label": "plays for", "domain": "Player", "range": "Team", "parents": ["playedFor"], "graph_rel": "PLAYS_FOR", "synonyms": ["plays for", "on", "currently with", "member of"]},
+    {"id": "playedFor", "label": "played for", "domain": "Player", "range": "Team", "parents": [], "graph_rel": "PLAYED_FOR", "synonyms": ["played for", "was on", "spent time with", "suited up for"]},
+    {"id": "teammateOf", "label": "teammate of", "domain": "Player", "range": "Player", "symmetric": true, "derived": true, "graph_rel": "TEAMMATE", "synonyms": ["teammate", "plays with", "alongside"]},
+    {"id": "formerTeammateOf", "label": "former teammate of", "domain": "Player", "range": "Player", "symmetric": true, "derived": true, "graph_rel": "FORMER_TEAMMATE", "synonyms": ["former teammate", "used to play with", "once shared a locker room", "ex-teammate"]},
+    {"id": "conflictWith", "label": "in conflict with", "domain": "Player", "range": "Player", "symmetric": true, "derived": true, "graph_rel": "CONFLICT_WITH", "synonyms": ["has beef with", "feuded with", "clashed with", "bad blood with", "at odds with", "fell out with"]},
+    {"id": "draftClassmateOf", "label": "draft classmate of", "domain": "Player", "range": "Player", "symmetric": true, "derived": true, "graph_rel": "DRAFT_CLASSMATE", "synonyms": ["draft classmate", "same draft class", "drafted the same year"]},
+    {"id": "divisionRivalOf", "label": "division rival of", "domain": "Team", "range": "Team", "symmetric": true, "derived": true, "graph_rel": "DIVISION_RIVAL", "synonyms": ["division rival", "same division"]},
+    {"id": "tradedFrom", "label": "traded from", "domain": "Trade", "range": "Team", "graph_rel": "TRADE_FROM", "synonyms": ["traded from", "sent by", "dealt by"]},
+    {"id": "tradedTo", "label": "traded to", "domain": "Trade", "range": "Team", "graph_rel": "TRADE_TO", "synonyms": ["traded to", "acquired by", "landed with"]},
+    {"id": "involvedIn", "label": "involved in", "domain": "Player", "range": "Event", "graph_rel": "INVOLVED_IN", "synonyms": ["involved in", "part of", "participant in"]},
+    {"id": "mentionedIn", "label": "mentioned in", "domain": "Player", "range": "Article", "graph_rel": "MENTIONED_IN", "synonyms": ["mentioned in", "written about in", "appears in"]}
+  ],
+
+  "rules": [
+    {
+      "id": "r1_teammate",
+      "head": "teammateOf(?a, ?b)",
+      "body": "playsFor(?a, ?t) AND playsFor(?b, ?t) AND ?a != ?b",
+      "description": "Two players on the same current roster are teammates."
+    },
+    {
+      "id": "r2_former_teammate",
+      "head": "formerTeammateOf(?a, ?b)",
+      "body": "playedFor(?a, ?t, ?season) AND playedFor(?b, ?t, ?season) AND ?a != ?b AND NOT teammateOf(?a, ?b)",
+      "description": "Two players who shared a roster in the same season but are not currently teammates. This edge exists in no source file: it is computed by overlapping season ranges, and it is the single most useful derived relation in the dataset."
+    },
+    {
+      "id": "r3_conflict",
+      "head": "conflictWith(?a, ?b)",
+      "body": "Conflict(?e) AND involvedIn(?a, ?e) AND involvedIn(?b, ?e) AND ?a != ?b",
+      "description": "Two players named in the same conflict event are in conflict. Because Conflict has seven subclasses, this rule fires on trade requests and thumbs-down gestures as well as on fistfights."
+    },
+    {
+      "id": "r4_draft_classmate",
+      "head": "draftClassmateOf(?a, ?b)",
+      "body": "draftYear(?a) = draftYear(?b) AND ?a != ?b",
+      "description": "Derived from a scalar column rather than stored as an edge."
+    },
+    {
+      "id": "r5_division_rival",
+      "head": "divisionRivalOf(?t1, ?t2)",
+      "body": "division(?t1) = division(?t2) AND ?t1 != ?t2",
+      "description": "Derived from team metadata."
+    }
+  ],
+
+  "showcase_expansions": [
+    {"phrase": "big man", "expands_to": ["PowerForward", "Center"], "becomes": "position IN ('PF','C')"},
+    {"phrase": "beef", "expands_to": ["Conflict", "OnCourtAltercation", "LockerRoomIncident", "PublicCallout", "ContractDispute", "ConductSuspension", "RoleDispute", "Beef"], "becomes": "conflict.kind IN (...8 subclasses...)"},
+    {"phrase": "former teammate", "expands_to": ["formerTeammateOf"], "becomes": "MATCH (a)-[:FORMER_TEAMMATE]->(b)"},
+    {"phrase": "sniper", "expands_to": ["Sniper"], "becomes": "fg3_pct >= 0.38"}
+  ]
+}

@@ -1,0 +1,8 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+anthropic>=1.4,<2
+kuzu==0.7.1
+sqlite-vec==0.1.6
+fastembed==0.5.1
+numpy>=1.26,<3

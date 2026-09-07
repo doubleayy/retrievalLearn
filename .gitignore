@@ -1,0 +1,17 @@
+# python
+apps/api/.venv/
+apps/api/.build/
+apps/api/data/_precompute.db*
+__pycache__/
+*.pyc
+.env
+
+# node
+node_modules/
+.next/
+out/
+.env.local
+
+# os
+.DS_Store
+Thumbs.db
