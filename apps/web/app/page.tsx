@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { ApiError } from "@/components/ApiError";
 import { ModePicker } from "@/components/ModePicker";
 import { ResultList } from "@/components/ResultList";
 import { UnderTheHood } from "@/components/UnderTheHood";
@@ -31,7 +32,7 @@ export default function ArenaPage() {
   const [mode, setMode] = useState<ModeId>("keyword");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<unknown>(null);
   const [runs, setRuns] = useState<Partial<Record<ModeId, SearchResponse>>>({});
   const [activeExample, setActiveExample] = useState<ExampleQuery | null>(null);
   const lastQuery = useRef("");
@@ -51,7 +52,7 @@ export default function ArenaPage() {
       const text = q.trim();
       if (!text) return;
       setLoading(true);
-      setError("");
+      setError(null);
       if (text !== lastQuery.current) {
         setRuns({});
         lastQuery.current = text;
@@ -60,7 +61,7 @@ export default function ArenaPage() {
         const data = await search(text, m);
         setRuns((prev) => ({ ...prev, [m]: data }));
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(e);
       } finally {
         setLoading(false);
       }
@@ -178,9 +179,8 @@ export default function ArenaPage() {
       ) : null}
 
       {error ? (
-        <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/5 p-3.5">
-          <p className="text-[13px] font-medium text-rose-200">Query failed</p>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-rose-300/90">{error}</p>
+        <div className="mb-6">
+          <ApiError error={error} title="Query failed" />
         </div>
       ) : null}
 

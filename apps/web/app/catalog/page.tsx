@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { ApiError } from "@/components/ApiError";
 import { CodeBlock } from "@/components/CodeBlock";
 import {
   getCatalog,
@@ -67,10 +68,10 @@ export default function CatalogPage() {
   const [tab, setTab] = useState<"data" | "ontology" | "graph">("data");
   const [catalog, setCatalog] = useState<CatalogResponse | null>(null);
   const [onto, setOnto] = useState<OntologyResponse | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
-    getCatalog().then(setCatalog).catch((e) => setError(String(e)));
+    getCatalog().then(setCatalog).catch(setError);
     getOntology().then(setOnto).catch(() => undefined);
   }, []);
 
@@ -110,11 +111,7 @@ export default function CatalogPage() {
         ))}
       </div>
 
-      {error ? (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-4 text-[13px] text-rose-200">
-          Could not reach the API. {error}
-        </div>
-      ) : null}
+      {error ? <ApiError error={error} /> : null}
 
       {tab === "data" && catalog ? (
         <>

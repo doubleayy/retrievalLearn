@@ -1,5 +1,48 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
+// NEXT_PUBLIC_* is inlined at BUILD time, not read at runtime. Setting this in
+// Vercel after a deploy does nothing until you redeploy — which is the single
+// most common reason this app cannot reach its API.
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL?.trim();
+
+export const API_URL = (RAW_API_URL || "http://localhost:8000").replace(/\/$/, "");
+export const API_URL_CONFIGURED = Boolean(RAW_API_URL);
+
+/** Turn an opaque `TypeError: Failed to fetch` into something actionable. */
+export function diagnoseFetchFailure(error: unknown): string[] {
+  const message = error instanceof Error ? error.message : String(error);
+  const networkLevel = /failed to fetch|networkerror|load failed/i.test(message);
+  if (!networkLevel) return [];
+
+  const hints: string[] = [];
+  const pageIsHttps =
+    typeof window !== "undefined" && window.location.protocol === "https:";
+
+  if (!API_URL_CONFIGURED) {
+    hints.push(
+      "NEXT_PUBLIC_API_URL was not set when this site was built, so it is " +
+        "falling back to http://localhost:8000 — which points at your own " +
+        "machine, not the API. Set it in Vercel, then redeploy: the value is " +
+        "baked in at build time, so saving it alone changes nothing.",
+    );
+  }
+  if (pageIsHttps && API_URL.startsWith("http://")) {
+    hints.push(
+      `This page is served over HTTPS but the API URL is ${API_URL}. Browsers ` +
+        "block insecure requests from a secure page. Use the https:// form.",
+    );
+  }
+  if (API_URL_CONFIGURED) {
+    hints.push(
+      "If the URL above is correct, this is almost certainly CORS: set " +
+        "CORS_ORIGINS on the API to this site's exact origin " +
+        `(${typeof window !== "undefined" ? window.location.origin : "your Vercel URL"}) ` +
+        "and restart it. Your browser console will name the blocked origin.",
+    );
+    hints.push(
+      `Check the API is up directly: open ${API_URL}/api/health in a new tab.`,
+    );
+  }
+  return hints;
+}
 
 export type ModeId =
   | "keyword"
