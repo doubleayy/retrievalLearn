@@ -1,9 +1,16 @@
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+# This file is read relative to the service's Root Directory, which must be
+# set to `apps/api` in Railway (Settings -> Source -> Root Directory).
+#
+# `dockerfilePath` is deliberately NOT set. Railway resolves that key against
+# the repository root rather than the Root Directory, so spelling it out here
+# makes Railway look for /Dockerfile instead of /apps/api/Dockerfile and the
+# deploy fails before it starts. With Root Directory set, the Dockerfile
+# sitting next to this file is detected automatically.
 
 [deploy]
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+# No startCommand either: the Dockerfile CMD binds 0.0.0.0 and falls back to
+# port 8000 when PORT is unset. Repeating it with a bare $PORT means an unset
+# variable produces `uvicorn --port` with no value, which crashes on boot.
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
