@@ -3,16 +3,70 @@
 // most common reason this app cannot reach its API.
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL?.trim();
 
-export const API_URL = (RAW_API_URL || "http://localhost:8000").replace(/\/$/, "");
+/**
+ * Repair the two mistakes people actually make when pasting a Railway domain.
+ *
+ * A value with no scheme is a *relative* URL, so the browser resolves it
+ * against the Vercel origin and every call 404s against the wrong host. A
+ * trailing `/api` double-counts the prefix this client already appends.
+ */
+function normalizeApiUrl(raw: string | undefined): { url: string; notes: string[] } {
+  const notes: string[] = [];
+  const trimmed = raw?.trim();
+  if (!trimmed) return { url: "http://localhost:8000", notes };
+
+  let url = trimmed;
+  if (!/^https?:\/\//i.test(url)) {
+    url = `https://${url}`;
+    notes.push(
+      `NEXT_PUBLIC_API_URL had no scheme, so it was read as a path relative to ` +
+        `this site. Assuming https://. Set it to "${url}" to remove the guess.`,
+    );
+  }
+  url = url.replace(/\/+$/, "");
+  if (/\/api$/i.test(url)) {
+    url = url.replace(/\/api$/i, "");
+    notes.push(
+      "NEXT_PUBLIC_API_URL ended in /api, which this client already appends. " +
+        "Trailing /api removed — set it to the bare origin.",
+    );
+  }
+  return { url, notes };
+}
+
+const NORMALIZED = normalizeApiUrl(RAW_API_URL);
+
+export const API_URL = NORMALIZED.url;
+export const API_URL_NOTES = NORMALIZED.notes;
 export const API_URL_CONFIGURED = Boolean(RAW_API_URL);
 
-/** Turn an opaque `TypeError: Failed to fetch` into something actionable. */
+/** Turn an opaque network or HTTP error into something actionable. */
 export function diagnoseFetchFailure(error: unknown): string[] {
   const message = error instanceof Error ? error.message : String(error);
   const networkLevel = /failed to fetch|networkerror|load failed/i.test(message);
-  if (!networkLevel) return [];
+  const notFound = /\(404\)|^404\b/.test(message);
+  const badGateway = /\(50[234]\)|^50[234]\b/.test(message);
 
-  const hints: string[] = [];
+  const hints: string[] = [...API_URL_NOTES];
+
+  if (notFound) {
+    hints.push(
+      `A 404 means something answered, but it was not this API. Confirm ` +
+        `${API_URL}/api/health returns JSON in a browser tab. If the URL above ` +
+        `is missing https://, the browser treated it as a path on this site and ` +
+        `asked Vercel for it instead of Railway.`,
+    );
+    return hints;
+  }
+  if (badGateway) {
+    hints.push(
+      `The API host answered but the service behind it did not. Check the ` +
+        `Railway deploy logs — it may be restarting or out of memory.`,
+    );
+    return hints;
+  }
+  if (!networkLevel) return hints;
+
   const pageIsHttps =
     typeof window !== "undefined" && window.location.protocol === "https:";
 
