@@ -240,6 +240,145 @@ export interface OntologyResponse {
   conflict_kinds: string[];
 }
 
+// --- evaluation report ----------------------------------------------------
+// Generated offline by `python -m app.evaluation.runner` and served static, so
+// these types describe a file on disk rather than anything computed per request.
+
+export interface EvalGrade {
+  grade: number;
+  name: string;
+  meaning: string;
+}
+
+export interface EvalComponent {
+  id: string;
+  name: string;
+  max: number;
+  how: string;
+  why: string;
+}
+
+export interface EvalRubric {
+  k: number;
+  noise_window: number;
+  grades: EvalGrade[];
+  components: EvalComponent[];
+  empty_rule: string;
+  rounding: string;
+}
+
+export interface EvalResult {
+  rank: number;
+  id: string;
+  kind: string;
+  title: string;
+  snippet: string;
+  score: number;
+  why: string;
+  grade: number;
+  trap_reason: string;
+  credited: string[];
+}
+
+export interface EvalStep {
+  label: string;
+  language: "sql" | "cypher" | "python" | "text" | "json";
+  code: string;
+  engine: string;
+  row_count: number;
+  latency_ms: number;
+  note: string;
+  error: string;
+}
+
+export interface EvalRun {
+  mode: ModeId;
+  score: number;
+  components: {
+    total: number;
+    top_hit: number;
+    coverage: number;
+    cleanliness: number;
+    retrieved: number;
+    answers_found: number;
+    answers_possible: number;
+    traps_hit: number;
+    irrelevant_in_window: number;
+    first_answer_rank: number | null;
+    empty: boolean;
+  };
+  verdict: string;
+  commentary: string;
+  results: EvalResult[];
+  steps: EvalStep[];
+  warnings: string[];
+  latency_ms: number;
+  fusion_legs: Record<string, number> | null;
+}
+
+export interface EvalTest {
+  id: string;
+  family: string;
+  query: string;
+  headline: string;
+  preamble: string;
+  what_good_looks_like: string;
+  plan: {
+    interpretation: string;
+    keyword_query: string;
+    semantic_query: string;
+    cypher: string;
+    sql_filter: string;
+    ontology_terms: string[];
+    plan_note?: string;
+  };
+  gold: Array<{ id: string; grade: number; grade_name: string; title: string }>;
+  traps: Array<{ id: string; title: string; reason: string }>;
+  runs: Record<ModeId, EvalRun>;
+  best_mode: ModeId[];
+  best_score: number;
+  spread: number;
+}
+
+export interface EvalReport {
+  schema_version: number;
+  generated_at: string;
+  environment: {
+    python: string;
+    embed_model: string;
+    vector_engine: string;
+    corpus: Record<string, number>;
+  };
+  planner: { source: string; note: string };
+  rubric: EvalRubric;
+  modes: Array<{ id: ModeId; label: string }>;
+  families: Array<{ id: string; blurb: string }>;
+  how_to_reproduce: string;
+  caveats: string[];
+  tests: EvalTest[];
+  analysis: {
+    leaderboard: Array<{
+      mode: ModeId;
+      label: string;
+      mean: number;
+      best: number;
+      worst: number;
+      wins: number;
+      traps_retrieved: number;
+      empty_answers: number;
+      median_latency_ms: number;
+    }>;
+    by_family: Array<{
+      family: string;
+      blurb: string;
+      tests: number;
+      scores: Record<ModeId, number>;
+    }>;
+    findings: Array<{ title: string; body: string; evidence: string[] }>;
+    totals: Record<string, number>;
+  };
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
@@ -250,6 +389,7 @@ export const getModes = () => get<{ modes: ModeInfo[] }>("/api/modes");
 export const getExamples = () => get<{ examples: ExampleQuery[] }>("/api/examples");
 export const getCatalog = () => get<CatalogResponse>("/api/catalog");
 export const getOntology = () => get<OntologyResponse>("/api/ontology");
+export const getEval = () => get<EvalReport>("/api/eval");
 export const getHealth = () =>
   get<{ ok: boolean; planner_model: string; planner_configured: boolean; build: any }>(
     "/api/health",

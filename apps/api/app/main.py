@@ -6,9 +6,11 @@ query language it used to get them.
 
 from __future__ import annotations
 
+import json
 import time
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
+from functools import lru_cache
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
@@ -18,6 +20,7 @@ from .catalog import EXAMPLES, build_catalog, ontology_payload
 from .config import (
     CORS_ORIGIN_REGEX,
     CORS_ORIGINS,
+    DATA_DIR,
     DEFAULT_LIMIT,
     MAX_LIMIT,
     MAX_QUERY_CHARS,
@@ -139,6 +142,33 @@ def ontology() -> dict[str, Any]:
     if not index.ready:
         raise HTTPException(503, "Index still building.")
     return ontology_payload(index)
+
+
+@app.get("/api/eval")
+def evaluation() -> dict[str, Any]:
+    """The pre-run evaluation report.
+
+    Generated offline by `python -m app.evaluation.runner` and served verbatim.
+    Running it per request would mean 60 retrievals and, with a live planner,
+    12 model calls - and would give two visitors two different reports.
+    """
+    report = _eval_report()
+    if report is None:
+        raise HTTPException(
+            503,
+            "No evaluation report has been generated. Run "
+            "`python -m app.evaluation.runner` in apps/api to build one.",
+        )
+    return report
+
+
+@lru_cache(maxsize=1)
+def _eval_report() -> dict[str, Any] | None:
+    path = DATA_DIR / "eval_report.json"
+    if not path.exists():
+        return None
+    with path.open(encoding="utf-8") as fh:
+        return json.load(fh)
 
 
 @app.post("/api/search", response_model=SearchResponse)

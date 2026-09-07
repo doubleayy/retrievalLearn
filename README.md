@@ -85,6 +85,72 @@ LIMIT 25
 
 ---
 
+## The evaluation
+
+`/evaluation` is a pre-run report: twelve questions, five modes, sixty
+retrievals, each scored out of five against relevance judgments written by hand.
+It is generated offline and served as a static artefact, so everyone sees the
+same report and nobody pays for it.
+
+Each test says why it is in the suite before it says how anything scored, lists
+the traps planted for it, and shows every mode's ranked page next to the query
+that produced it. The report ends with analysis whose prose is fixed and whose
+numbers are interpolated from the run — a conclusion that stops being true reads
+as obviously wrong rather than quietly going stale.
+
+### The rubric
+
+Three components that visibly add up to five, chosen over nDCG because a metric
+you have to take on faith is not much use in a teaching app.
+
+| Component | Max | What it measures |
+|---|---|---|
+| Top hit | 2.0 | The grade of rank 1. Most people read one result and stop. |
+| Coverage | 2.0 | Recall@8 over the correct answers, capped so a 27-answer question is scoreable. |
+| Cleanliness | 1.0 | Precision in the top 5, with a planted trap costing ~4x ordinary noise. |
+
+A mode that returns nothing scores 0. Silence is not precision.
+
+### The plan is pinned
+
+Every mode runs the same hand-written FTS5 expression, embedding string and
+Cypher, so the report measures retrieval rather than the planner — and can be
+regenerated for free, offline, with no `ANTHROPIC_API_KEY`. This also means the
+comparison between hybrid and hybrid + ontology is unfair to the ontology, since
+the pinned Cypher already encodes the translations the ontology exists to
+derive. That is stated in the report rather than hidden, and
+`--live-planner` runs it the other way.
+
+```bash
+cd apps/api
+python -m app.evaluation.runner                 # regenerate data/eval_report.json
+python -m app.evaluation.runner --live-planner  # measure the planner too
+python -m app.evaluation.runner --check         # CI: fail if scores drift
+```
+
+The suite validates itself before it runs: a judgment naming an id that does not
+exist in the corpus aborts the report rather than silently deflating a score.
+
+### What it found
+
+Some of it was not flattering, which is the point:
+
+- The ontology mode never beat plain hybrid on this suite, and lost to it three
+  times. On a negation question it scored **0.5/5** against hybrid's 5.0 —
+  `conflict` resolves to a modelled class, so the expansion rewrote the graph leg
+  into a `CONFLICT_WITH` traversal and returned precisely the players the
+  question excludes. An expansion step that cannot see the word "no" will
+  confidently invert your query.
+- Graph search cannot answer the draft-pick question at all, because picks were
+  modelled as rows on a relational table rather than as edges. The ceiling was
+  set by a schema decision, not by the technique.
+- Three articles assert things the structured data contradicts — a player
+  "traded twice" whom the ledger records once, two "former teammates" whose
+  season ranges never overlap, and a college pipeline article naming six of the
+  eight players in the database. Every text mode believes all three.
+
+---
+
 ## Architecture
 
 ```
@@ -100,11 +166,12 @@ retrievalLearn/
 │   │   │   ├── precompute.py     bakes document vectors at image build time
 │   │   │   ├── catalog.py        data catalog + curated example queries
 │   │   │   ├── stores/           relational.py · vectors.py · graph.py
-│   │   │   └── retrievers/       keyword · semantic · graphsearch · hybrid
-│   │   └── data/                 JSON seed files + embeddings.npz
+│   │   │   ├── retrievers/       keyword · semantic · graphsearch · hybrid
+│   │   │   └── evaluation/       suite.py · scoring.py · runner.py
+│   │   └── data/                 JSON seed files + embeddings.npz + eval_report.json
 │   └── web/                      Next.js 15 App Router  →  Vercel
-│       ├── app/                  / (arena) · /catalog · /learn
-│       ├── components/           ModePicker · ResultList · UnderTheHood · CodeBlock
+│       ├── app/                  / (arena) · /catalog · /evaluation · /learn
+│       ├── components/           ModePicker · ResultList · UnderTheHood · CodeBlock · EvalScore
 │       └── lib/api.ts            typed client
 ```
 
@@ -139,6 +206,7 @@ python -m venv .venv
 pip install -r requirements.txt
 
 python -m app.precompute        # embeds the corpus once (~25s, cached after)
+python -m app.evaluation.runner # optional: regenerate the /evaluation report (~10s)
 
 export ANTHROPIC_API_KEY=sk-ant-...
 uvicorn app.main:app --reload --port 8000
@@ -273,4 +341,5 @@ unproven. Set `ANTHROPIC_API_KEY` and try the showcase query first.
 Verified: the index build, all five retrieval modes end to end through the
 endpoint, response serialisation, FTS5 and Cypher execution, the ontology
 reasoner and expansion, the precompute cache, every read-only endpoint over
-HTTP, and the production build of the web app.
+HTTP, the full evaluation run (60 retrievals, generated and rendered), and the
+production build of the web app.

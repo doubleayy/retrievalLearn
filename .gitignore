@@ -15,3 +15,6 @@ out/
 # os
 .DS_Store
 Thumbs.db
+
+# build artefacts
+*.tsbuildinfo
