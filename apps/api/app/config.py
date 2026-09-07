@@ -28,6 +28,20 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 # Local ONNX model via fastembed. No API key, no per-query cost.
 EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5")
 EMBED_DIM = int(os.getenv("EMBED_DIM", "384"))
+# Left unset, onnxruntime sizes its thread pool to the host's CPU count, which
+# in a container means many threads and per-thread arenas for a workload that
+# is one 384-dim vector per query. Same failure mode as KUZU_BUFFER_POOL_MB.
+EMBED_THREADS = int(os.getenv("EMBED_THREADS", "2"))
+
+# --- Kuzu -----------------------------------------------------------------
+# Kuzu's buffer pool defaults to ~80% of *system* memory, and inside a container
+# it reads the host's RAM rather than the cgroup limit. On a small instance that
+# means it reserves tens of gigabytes on the first Database() call and the
+# process is OOM-killed before the app finishes starting. This graph is 38 nodes
+# and ~500 edges, so a small explicit pool is not a compromise.
+KUZU_BUFFER_POOL_MB = int(os.getenv("KUZU_BUFFER_POOL_MB", "96"))
+KUZU_MAX_DB_SIZE_MB = int(os.getenv("KUZU_MAX_DB_SIZE_MB", "512"))
+KUZU_MAX_THREADS = int(os.getenv("KUZU_MAX_THREADS", "2"))
 
 # --- Serving --------------------------------------------------------------
 PORT = int(os.getenv("PORT", "8000"))

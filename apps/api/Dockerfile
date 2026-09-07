@@ -5,7 +5,8 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     BUILD_DIR=/tmp/retrieval-arena \
     HF_HOME=/opt/models \
-    FASTEMBED_CACHE_PATH=/opt/models/fastembed
+    FASTEMBED_CACHE_PATH=/opt/models/fastembed \
+    OMP_NUM_THREADS=1
 
 WORKDIR /app
 

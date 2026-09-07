@@ -194,7 +194,27 @@ starts are a few seconds rather than half a minute. The healthcheck allows a
 | `CORS_ORIGINS` | Railway | localhost:3000 | Comma-separated exact origins. |
 | `CORS_ORIGIN_REGEX` | Railway | `https://.*\.vercel\.app` | Matches preview deployments. |
 | `RATE_LIMIT_PER_MIN` | Railway | `20` | Per IP, in-memory. |
+| `KUZU_BUFFER_POOL_MB` | Railway | `96` | **Must stay small.** See below. |
+| `EMBED_THREADS` | Railway | `2` | onnxruntime thread pool. |
 | `NEXT_PUBLIC_API_URL` | Vercel | localhost:8000 | Railway URL, no trailing slash. |
+
+### Container memory
+
+Two of the libraries here size themselves against the *host* machine rather than
+the container's cgroup limit, which makes them OOM-kill the process on a small
+instance:
+
+- **Kuzu** defaults `buffer_pool_size` to ~80% of system memory. On a Railway
+  host that is tens of gigabytes reserved inside a container capped at a few
+  hundred MB — the process dies about a second into startup with a bare `Killed`
+  and no traceback. `KUZU_BUFFER_POOL_MB=96` fixes it; the graph is 38 nodes and
+  ~500 edges, so this is not a compromise.
+- **onnxruntime** sizes its thread pool to the host CPU count. Capped via
+  `EMBED_THREADS` and `OMP_NUM_THREADS=1`, which matters on the first semantic
+  query rather than at boot.
+
+Steady-state RSS is roughly 400 MB once the embedding model has loaded, so give
+the service **at least 512 MB**, ideally 1 GB.
 
 ---
 

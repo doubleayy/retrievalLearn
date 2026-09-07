@@ -16,6 +16,8 @@ from typing import Any
 
 import kuzu
 
+from ..config import KUZU_BUFFER_POOL_MB, KUZU_MAX_DB_SIZE_MB, KUZU_MAX_THREADS
+
 DDL = [
     """CREATE NODE TABLE Player(
         id STRING, name STRING, position STRING, team_id STRING,
@@ -89,7 +91,14 @@ class GraphStore:
         if self.path.exists():
             shutil.rmtree(self.path, ignore_errors=True)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.db = kuzu.Database(str(self.path))
+        # Explicit limits are mandatory in a container: see KUZU_BUFFER_POOL_MB
+        # in config.py for why the defaults get the process OOM-killed.
+        self.db = kuzu.Database(
+            str(self.path),
+            buffer_pool_size=KUZU_BUFFER_POOL_MB * 1024 * 1024,
+            max_db_size=KUZU_MAX_DB_SIZE_MB * 1024 * 1024,
+            max_num_threads=KUZU_MAX_THREADS,
+        )
         self.conn = kuzu.Connection(self.db)
 
         for stmt in DDL:

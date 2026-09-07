@@ -18,7 +18,7 @@ from typing import Any
 
 import numpy as np
 
-from ..config import EMBED_DIM, EMBED_MODEL
+from ..config import EMBED_DIM, EMBED_MODEL, EMBED_THREADS
 
 _model: Any = None
 
@@ -29,7 +29,7 @@ def get_model() -> Any:
     if _model is None:
         from fastembed import TextEmbedding
 
-        _model = TextEmbedding(model_name=EMBED_MODEL)
+        _model = TextEmbedding(model_name=EMBED_MODEL, threads=EMBED_THREADS)
     return _model
 
 
