@@ -189,7 +189,7 @@ starts are a few seconds rather than half a minute. The healthcheck allows a
 | Variable | Where | Default | Notes |
 |---|---|---|---|
 | `ANTHROPIC_API_KEY` | Railway | — | **Required.** Without it `/api/search` returns a clear 503. |
-| `PLANNER_MODEL` | Railway | `claude-opus-5` | Drop to `claude-sonnet-5` or `claude-haiku-4-5` to cut per-query cost. |
+| `PLANNER_MODEL` | Railway | `claude-opus-5` | See **Choosing a planner model** below. |
 | `PLANNER_EFFORT` | Railway | `low` | Planning is a translation task; low effort is enough. |
 | `CORS_ORIGINS` | Railway | localhost:3000 | Comma-separated exact origins. |
 | `CORS_ORIGIN_REGEX` | Railway | `https://.*\.vercel\.app` | Matches preview deployments. |
@@ -215,6 +215,24 @@ instance:
 
 Steady-state RSS is roughly 400 MB once the embedding model has loaded, so give
 the service **at least 512 MB**, ideally 1 GB.
+
+---
+
+## Choosing a planner model
+
+`PLANNER_MODEL` is a pure environment-variable change — no redeploy of code
+needed, just restart the service.
+
+| Model | Input / output per MTok | Notes |
+|---|---|---|
+| `claude-opus-5` (default) | $5 / $25 | Best Cypher accuracy. |
+| `claude-sonnet-5` | $2 / $10 | 2.5x cheaper. The sensible default for a public demo. |
+| `claude-haiku-4-5` | $1 / $5 | 5x cheaper. Expect more Cypher repair passes. |
+
+`output_config.effort` is **rejected with a 400 on Haiku 4.5** and other pre-4.6
+models, so `planner.py` gates it via `supports_effort()`. Without that gate,
+switching to Haiku would fail every query. Setting `PLANNER_EFFORT=""` disables
+effort for any model.
 
 ---
 

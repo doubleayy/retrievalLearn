@@ -15,6 +15,7 @@ import json
 import re
 import time
 from collections import OrderedDict
+from typing import Any
 
 import anthropic
 
@@ -151,6 +152,25 @@ class PlannerError(RuntimeError):
     pass
 
 
+def supports_effort(model: str) -> bool:
+    """Whether `output_config.effort` is accepted by this model.
+
+    Effort is rejected with a 400 on Haiku 4.5 and the other pre-4.6 models, so
+    sending it unconditionally makes PLANNER_MODEL=claude-haiku-4-5 fail every
+    query. Gating it here keeps the model a pure environment-variable change.
+    """
+    return not ("haiku" in model or "-4-5" in model)
+
+
+def build_output_config(model: str, schema: dict | None) -> dict:
+    config: dict[str, Any] = {}
+    if schema is not None:
+        config["format"] = {"type": "json_schema", "schema": schema}
+    if PLANNER_EFFORT and supports_effort(model):
+        config["effort"] = PLANNER_EFFORT
+    return config
+
+
 class Planner:
     def __init__(self) -> None:
         self._client: anthropic.Anthropic | None = None
@@ -199,10 +219,7 @@ class Planner:
                 }
             ],
             messages=[{"role": "user", "content": query}],
-            output_config={
-                "format": {"type": "json_schema", "schema": PLAN_SCHEMA},
-                "effort": PLANNER_EFFORT,
-            },
+            output_config=build_output_config(PLANNER_MODEL, PLAN_SCHEMA),
         )
         if response.stop_reason == "refusal":
             raise PlannerError(
@@ -221,6 +238,11 @@ class Planner:
         plan["input_tokens"] = response.usage.input_tokens
         plan["output_tokens"] = response.usage.output_tokens
         plan["cache_read_tokens"] = getattr(response.usage, "cache_read_input_tokens", 0) or 0
+        # A first call WRITES the cache: reads are 0 but creation is ~1,550.
+        # Reporting only reads makes a working cache look broken.
+        plan["cache_write_tokens"] = (
+            getattr(response.usage, "cache_creation_input_tokens", 0) or 0
+        )
         plan["cached"] = False
         plan["repaired"] = False
         plan["cypher"] = _strip_fences(plan.get("cypher", ""))
@@ -254,7 +276,7 @@ class Planner:
                     ),
                 }
             ],
-            output_config={"effort": "low"},
+            output_config=build_output_config(PLANNER_MODEL, None),
         )
         text = next((b.text for b in response.content if b.type == "text"), "")
         return _strip_fences(text)

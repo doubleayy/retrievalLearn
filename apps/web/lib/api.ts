@@ -108,6 +108,7 @@ export interface PlanInfo {
   input_tokens: number;
   output_tokens: number;
   cache_read_tokens: number;
+  cache_write_tokens: number;
   cached: boolean;
   repaired: boolean;
 }

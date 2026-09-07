@@ -220,6 +220,7 @@ def search(req: SearchRequest, request: Request) -> SearchResponse:
             input_tokens=plan.get("input_tokens", 0),
             output_tokens=plan.get("output_tokens", 0),
             cache_read_tokens=plan.get("cache_read_tokens", 0),
+            cache_write_tokens=plan.get("cache_write_tokens", 0),
             cached=plan.get("cached", False),
             repaired=repaired,
         ),

@@ -83,7 +83,16 @@ export function UnderTheHood({ data }: { data: SearchResponse }) {
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Stat label="model" value={plan.model.replace("claude-", "")} />
           <Stat label="in / out tok" value={`${plan.input_tokens} / ${plan.output_tokens}`} />
-          <Stat label="cache read" value={`${plan.cache_read_tokens}`} />
+          <Stat
+            label="prompt cache"
+            value={
+              plan.cache_read_tokens
+                ? `${plan.cache_read_tokens} read`
+                : plan.cache_write_tokens
+                  ? `${plan.cache_write_tokens} written`
+                  : "—"
+            }
+          />
           <Stat label="plan" value={plan.cached ? "cached" : "fresh"} />
         </div>
 
